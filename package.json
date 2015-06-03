@@ -1,0 +1,40 @@
+{
+  "name": "svn",
+  "main": "./lib/svn",
+  "version": "0.0.0",
+  "description": "Marks lines/files in the editor gutter/treeview that have been added, edited, or deleted since the last commit.",
+  "keywords": [
+    "svn",
+    "vcs"
+  ],
+  "repository": "https://github.com/andischerer/atom-svn",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.200.0"
+  },
+  "dependencies": {
+    "event-kit": "^1.2.0",
+    "jsdifflib": "1.1.0",
+    "xml2js": "0.4.8"
+  },
+  "providedServices": {
+    "atom.repository-provider": {
+      "versions": {
+        "0.1.0": "getRepositoryProviderService"
+      }
+    }
+  },
+  "coffeelintConfig": {
+    "indentation": {
+      "level": "error",
+      "value": 2
+    },
+    "line_endings": {
+      "value": "unix",
+      "level": "error"
+    },
+    "max_line_length": {
+      "level": "ignore"
+    }
+  }
+}
