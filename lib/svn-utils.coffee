@@ -97,13 +97,6 @@ class Repository
     status = @getSvnPathStatus(svnPath)
     return status
 
-  relativize: (path) ->
-    return path unless path
-    if process.platform is 'win32'
-      path = path.replace(/\\/g, '/')
-    else
-      return path unless path[0] is '/'
-
   getPath: () ->
     return @rootPath
 

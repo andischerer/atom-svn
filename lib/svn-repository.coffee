@@ -136,7 +136,15 @@ class SvnRepository
     @projectAtRoot ?= @project?.relativize(@getPath()) is ''
 
   # Public: Makes a path relative to the repository's working directory.
-  relativize: (path) -> @getRepo().relativize(path)
+  relativize: (path) -> null
+
+  # Slash win32 path
+  slashPath: (path) ->
+    return path unless path
+    if process.platform is 'win32'
+      return path.replace(/\\/g, '/')
+    else
+      return path
 
   # Public: Returns true if the given branch exists.
   hasBranch: (branch) -> null
@@ -234,7 +242,7 @@ class SvnRepository
   # isPathIgnored: (path) -> @isStatusIgnored(@getPathStatus(path))
   isPathIgnored: (path) ->
     repo = @getRepo()
-    status = repo.getSvnPathStatus(repo.relativize(path))
+    status = repo.getSvnPathStatus(@slashPath(path))
     return repo.isStatusIgnored(status)
 
   # Public: Get the status of a directory in the repository's working directory.
@@ -245,7 +253,7 @@ class SvnRepository
   # {::isStatusModified} or {::isStatusNew} to get more information.
   getDirectoryStatus: (directoryPath) ->
     console.log('SVN', 'svn-repository', 'getDirectoryStatus', directoryPath) if @devMode
-    directoryPath = "#{@relativize(directoryPath)}/"
+    directoryPath = "#{@slashPath(directoryPath)}/"
     directoryStatus = 0
     for path, status of @statuses
       directoryStatus |= status if path.indexOf(directoryPath) is 0
@@ -260,7 +268,7 @@ class SvnRepository
   getPathStatus: (path) ->
     console.log('SVN', 'svn-repository', 'getPathStatus', path) if @devMode
     repo = @getRepo(path)
-    relativePath = repo.relativize(path)
+    relativePath = @slashPath(path)
     currentPathStatus = @statuses[relativePath] ? 0
     pathStatus = repo.getPathStatus(relativePath) ? 0
     pathStatus = 0 if repo.isStatusIgnored(pathStatus)
@@ -278,8 +286,8 @@ class SvnRepository
   #
   # Returns a status {Number} or null if the path is not in the cache.
   getCachedPathStatus: (path) ->
-    console.log('SVN', 'svn-repository', 'getCachedPathStatus', path, @statuses[@relativize(path)]) if @devMode
-    return @statuses[@relativize(path)]
+    console.log('SVN', 'svn-repository', 'getCachedPathStatus', path, @statuses[@slashPath(path)]) if @devMode
+    return @statuses[@slashPath(path)]
 
   # Public: Returns true if the given status indicates modification.
   isStatusModified: (status) -> @getRepo().isStatusModified(status)
@@ -306,8 +314,7 @@ class SvnRepository
   #   * `deleted` The {Number} of deleted lines.
   getDiffStats: (path) ->
     console.log('SVN', 'svn-repository', 'getDiffStats', path) if @devMode
-    repo = @getRepo()
-    return repo.getDiffStats(repo.relativize(path))
+    return @getRepo().getDiffStats(@slashPath(path))
 
   # Public: Retrieves the line diffs comparing the `HEAD` version of the given
   # path and the given text.
@@ -325,7 +332,7 @@ class SvnRepository
     # LF don't report every line modified when the text contains CRLF endings.
     options = ignoreEolWhitespace: process.platform is 'win32'
     repo = @getRepo(path)
-    return repo.getLineDiffs(repo.relativize(path), text, options)
+    return repo.getLineDiffs(@slashPath(path), text, options)
 
   ###
   Section: Checking Out
@@ -397,8 +404,9 @@ class SvnRepository
     new Promise((resolve, reject) =>
       statusesUnchanged = true
       for {status, path} in @getRepo().getStatus()
-        if @statuses[@relativize(path)] != status
-          @statuses[@relativize(path)] = status
+        slashedPath = @slashPath(path)
+        if @statuses[slashedPath] != status
+          @statuses[slashedPath] = status
           statusesUnchanged = false
       unless statusesUnchanged
         @emitter.emit 'did-change-statuses'
