@@ -27,6 +27,8 @@ deletedStatusFlags = statusWorkingDirDelete | statusIndexDeleted
 
 class Repository
 
+  devMode: atom.inDevMode()
+
   username: null
   password: null
 
@@ -46,7 +48,7 @@ class Repository
 
   constructor: (repoRootPath) ->
     @rootPath = path.normalize(repoRootPath)
-    console.log 'SVN', 'repoRootPath', @rootPath
+    console.log('SVN', 'svn-utils', 'repoRootPath', @rootPath) if @devMode
 
   # Checks if there is a svn binary in the os searchpath and returns the
   # binary version string.
@@ -55,7 +57,7 @@ class Repository
   checkBinaryAvailable: () ->
     @version = @getSvnVersion()
     if @version?
-      console.log 'SVN', "binary version: #{@version}"
+      console.log('SVN', 'svn-utils', "binary version: #{@version}") if @devMode
       @binaryAvailable = true
     else
       @binaryAvailable = false
@@ -69,13 +71,13 @@ class Repository
     if info?
       @url = info.entry.url
       @revision = info.entry.$.revision
-      console.log 'SVN', 'url', @url
-      console.log 'SVN', 'revision', @revision
-      @isSvnRepository = true
+      console.log('SVN', 'svn-utils', 'url', @url) if @devMode
+      console.log('SVN', 'svn-utils', 'revision', @revision) if @devMode
+      @hasRepositoryInfos = true
     else
-      @isSvnRepository = false
+      @hasRepositoryInfos = false
 
-    return @isSvnRepository
+    return @hasRepositoryInfos
 
   ###
   Section: TreeView Path SVN status
@@ -172,7 +174,7 @@ class Repository
         if opcode[0] == 'delete'
           diffStats.deleted += (opcode[2] - opcode[1]) - (opcode[4] - opcode[3])
 
-    console.log 'SVN', 'getDiffStats', path, diffStats
+    console.log('SVN', 'svn-utils', 'getDiffStats', path, diffStats) if @devMode
     return diffStats
 
   # Public: Retrieves the line diffs comparing the `HEAD` version of the given
@@ -187,7 +189,7 @@ class Repository
   #   * `oldLines` The {Number} of lines in the old hunk.
   #   * `newLines` The {Number} of lines in the new hunk
   getLineDiffs: (path, text, options) ->
-    console.log 'SVN', 'getLineDiffs', path, options
+    console.log('SVN', 'svn-utils', 'getLineDiffs', path, options) if @devMode
     hunks = []
 
     fileFromSvn = @getSvnCat(path)
@@ -238,7 +240,7 @@ class Repository
     return child.stdout.toString()
 
   handleSvnError: (error) ->
-    console.error(error)
+    console.error('SVN', 'svn-utils', error)
 
   # Parses the stdout xml string from a svn command and transforms it
   # into a JSON-Object. Throws an Error if there was a parse error.
@@ -305,6 +307,7 @@ class Repository
           'status': @mapSvnStatus(resultItem["wc-status"].$)
         })
     else
+      # @TODO: issue @rootPath verwenden
       items.push({
         'path': svnPath
         'status': 0
@@ -389,6 +392,12 @@ class Repository
       return null
 
 
+# creates and returns a new {Repository} object if svn-binary could be found
+# and several infos from are successfully read. Otherwise null.
+#
+# * `repositoryPath` The path {String} to the repository root directory
+#
+# Returns a new {Repository} object
 openRepository = (repositoryPath) ->
   repository = new Repository(repositoryPath)
   if repository.checkBinaryAvailable() && repository.readRepositoryInfos()

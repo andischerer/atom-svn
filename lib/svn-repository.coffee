@@ -5,6 +5,8 @@ SvnUtils = require './svn-utils'
 module.exports =
 class SvnRepository
 
+  devMode: atom.inDevMode()
+
   ###
   Section: Construction and Destruction
   ###
@@ -19,7 +21,7 @@ class SvnRepository
   # Returns a {SvnRepository} instance or `null` if the repository could not be opened.
   @open: (path, options) ->
     return null unless path
-    console.log 'SVN', '@open', path, options
+    console.log('SVN', 'svn-repository', '@open', path, options) if @devMode
     try
       new SvnRepository(path, options)
     catch
@@ -56,7 +58,7 @@ class SvnRepository
   # This destroys any tasks and subscriptions and releases the SvnRepository
   # object
   destroy: ->
-    console.log 'SVN', 'destroy'
+    console.log('SVN', 'svn-repository', 'destroy') if @devMode
     if @emitter?
       @emitter.emit 'did-destroy'
       @emitter.dispose()
@@ -124,13 +126,13 @@ class SvnRepository
 
   # Public: Returns the {String} working directory path of the repository.
   getWorkingDirectory: ->
-    console.log 'SVN', 'getWorkingDirectory', 'shouldnt get called!!'
+    console.log('SVN', 'svn-repository', 'getWorkingDirectory', 'shouldnt get called!!') if @devMode
     # return @getRepo().getWorkingDirectory()
 
   # Public: Returns true if at the root, false if in a subfolder of the
   # repository.
   isProjectAtRoot: ->
-    console.log 'SVN', 'isProjectAtRoot', @project?.relativize(@getPath()) is ''
+    console.log('SVN', 'svn-repository', 'isProjectAtRoot', @project?.relativize(@getPath()) is '') if @devMode
     @projectAtRoot ?= @project?.relativize(@getPath()) is ''
 
   # Public: Makes a path relative to the repository's working directory.
@@ -242,12 +244,11 @@ class SvnRepository
   # Returns a {Number} representing the status. This value can be passed to
   # {::isStatusModified} or {::isStatusNew} to get more information.
   getDirectoryStatus: (directoryPath) ->
-    console.log 'SVN', 'getDirectoryStatus', directoryPath
+    console.log('SVN', 'svn-repository', 'getDirectoryStatus', directoryPath) if @devMode
     directoryPath = "#{@relativize(directoryPath)}/"
     directoryStatus = 0
     for path, status of @statuses
       directoryStatus |= status if path.indexOf(directoryPath) is 0
-      # console.log 'SVN', 'getDirectoryStatus', directoryStatus
     return directoryStatus
 
   # Public: Get the status of a single path in the repository.
@@ -257,7 +258,7 @@ class SvnRepository
   # Returns a {Number} representing the status. This value can be passed to
   # {::isStatusModified} or {::isStatusNew} to get more information.
   getPathStatus: (path) ->
-    console.log 'SVN', 'getPathStatus', path
+    console.log('SVN', 'svn-repository', 'getPathStatus', path) if @devMode
     repo = @getRepo(path)
     relativePath = repo.relativize(path)
     currentPathStatus = @statuses[relativePath] ? 0
@@ -277,7 +278,7 @@ class SvnRepository
   #
   # Returns a status {Number} or null if the path is not in the cache.
   getCachedPathStatus: (path) ->
-    console.log 'SVN', 'getCachedPathStatus', path, @statuses[@relativize(path)]
+    console.log('SVN', 'svn-repository', 'getCachedPathStatus', path, @statuses[@relativize(path)]) if @devMode
     return @statuses[@relativize(path)]
 
   # Public: Returns true if the given status indicates modification.
@@ -304,7 +305,7 @@ class SvnRepository
   #   * `added` The {Number} of added lines.
   #   * `deleted` The {Number} of deleted lines.
   getDiffStats: (path) ->
-    console.log 'SVN', 'getDiffStats', path
+    console.log('SVN', 'svn-repository', 'getDiffStats', path) if @devMode
     repo = @getRepo()
     return repo.getDiffStats(repo.relativize(path))
 
@@ -390,15 +391,15 @@ class SvnRepository
 
   # Refreshes the current svn status in an outside process and asynchronously
   # updates the relevant properties.
-  # @TODO: implement Task
   refreshStatus: ->
-    console.log 'SVN', 'refreshStatus'
+    console.log('SVN', 'svn-repository', 'refreshStatus') if @devMode
 
-    statusesUnchanged = true
-    for {status, path} in @getRepo().getStatus()
-      if @statuses[@relativize(path)] != status
-        @statuses[@relativize(path)] = status
-        statusesUnchanged = false
-
-    unless statusesUnchanged
-      @emitter.emit 'did-change-statuses'
+    new Promise((resolve, reject) =>
+      statusesUnchanged = true
+      for {status, path} in @getRepo().getStatus()
+        if @statuses[@relativize(path)] != status
+          @statuses[@relativize(path)] = status
+          statusesUnchanged = false
+      unless statusesUnchanged
+        @emitter.emit 'did-change-statuses'
+    )
