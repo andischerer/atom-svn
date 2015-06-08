@@ -307,9 +307,8 @@ class Repository
           'status': @mapSvnStatus(resultItem["wc-status"].$)
         })
     else
-      # @TODO: issue @rootPath verwenden
       items.push({
-        'path': svnPath
+        'path': @rootPath
         'status': 0
       })
     return items
