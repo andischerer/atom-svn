@@ -402,6 +402,9 @@ class SvnRepository
     console.log('SVN', 'svn-repository', 'refreshStatus') if @devMode
 
     new Promise((resolve, reject) =>
+      if @getRepo().checkRepositoryHasChanged()
+        @statuses = {}
+        
       statusesUnchanged = true
       for {status, path} in @getRepo().getStatus()
         slashedPath = @slashPath(path)

@@ -63,21 +63,28 @@ class Repository
       @binaryAvailable = false
     return @binaryAvailable
 
-  # Parses info from `svn info` command
+  # Parses info from `svn info` command and checks if repo infos have changed
+  # since last check
   #
-  # Returns a {boolean} true if no Error was raised, false otherwise
-  readRepositoryInfos: () ->
+  # Returns a {boolean} if repo infos have changed
+  checkRepositoryHasChanged: () ->
+    hasChanged = false
+    revision = @getSvnWorkingCopyRevision()
+    if revision?
+      console.log('SVN', 'svn-utils', 'revision', revision) if @devMode
+      if revision != @revision
+        @revision = revision
+        hasChanged = true
+
     info = @getSvnInfo()
     if info?
-      @url = info.entry.url
-      @revision = info.entry.$.revision
-      console.log('SVN', 'svn-utils', 'url', @url) if @devMode
-      console.log('SVN', 'svn-utils', 'revision', @revision) if @devMode
-      @hasRepositoryInfos = true
-    else
-      @hasRepositoryInfos = false
+      url = info.entry.url
+      console.log('SVN', 'svn-utils', 'url', url) if @devMode
+      if url != @url
+        @url = url
+        hasChanged = true
 
-    return @hasRepositoryInfos
+    return hasChanged
 
   ###
   Section: TreeView Path SVN status
@@ -232,6 +239,22 @@ class Repository
       throw new Error(child.stderr.toString())
     return child.stdout.toString()
 
+  # Spawns an svnversion command and returns stdout or throws an error if process
+  # exits with an exitcode unequal to zero.
+  #
+  # * `params` The {Array} for commandline arguments
+  #
+  # Returns a {String} of process stdout
+  svnversionCommand: (params) ->
+    if !params
+      params = []
+    if !util.isArray(params)
+      params = [params]
+    child = spawnSync('svnversion', params)
+    if child.status != 0
+      throw new Error(child.stderr.toString())
+    return child.stdout.toString()
+
   handleSvnError: (error) ->
     console.error('SVN', 'svn-utils', error)
 
@@ -273,6 +296,17 @@ class Repository
       xml = @svnCommand(['info', '--xml', @rootPath])
       infoObject = @svnXmlToObject(xml)
       return infoObject
+    catch error
+      @handleSvnError(error)
+      return null
+
+  # Returns on success the current working copy revision. Otherwise null.
+  #
+  # Returns a {String} with the current working copy revision
+  getSvnWorkingCopyRevision: () ->
+    try
+      revisions = @svnversionCommand([@rootPath, '-n'])
+      return revisions.split(':')[1]
     catch error
       @handleSvnError(error)
       return null
@@ -392,7 +426,7 @@ class Repository
 # Returns a new {Repository} object
 openRepository = (repositoryPath) ->
   repository = new Repository(repositoryPath)
-  if repository.checkBinaryAvailable() && repository.readRepositoryInfos()
+  if repository.checkBinaryAvailable()
     return repository
   else
     return null

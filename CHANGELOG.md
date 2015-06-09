@@ -1,3 +1,6 @@
+## 0.0.5
+- refresh repository status on working copy revision change(commit, pull) and url change(switch)
+
 ## 0.0.4
 - fixed darwin and linux path
 
