@@ -1,3 +1,8 @@
+## 0.0.6
+- support for shortHead info in statusbar
+- performance improvement: jquery instead of xml2js for xml parsing
+- error handling
+
 ## 0.0.5
 - refresh repository status on working copy revision change(commit, pull) and url change(switch)
 
