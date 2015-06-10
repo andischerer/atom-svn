@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "event-kit": "^1.2.0",
-    "jsdifflib": "1.1.0",
-    "xml2js": "0.4.8"
+    "jquery": "^2.1.4",
+    "jsdifflib": "1.1.0"
   },
   "providedServices": {
     "atom.repository-provider": {

@@ -2,7 +2,7 @@ fs = require 'fs'
 path = require 'path'
 util = require 'util'
 urlParser = require 'url'
-xml2js = require 'xml2js'
+$ = require 'jquery'
 {spawnSync} = require 'child_process'
 diffLib = require 'jsdifflib'
 
@@ -68,7 +68,7 @@ class Repository
       @binaryAvailable = false
     return @binaryAvailable
 
-  # Parses info from `svn info` command and checks if repo infos have changed
+  # Parses info from `svn info` and `svnversion` command and checks if repo infos have changed
   # since last check
   #
   # Returns a {boolean} if repo infos have changed
@@ -76,18 +76,19 @@ class Repository
     hasChanged = false
     revision = @getSvnWorkingCopyRevision()
     if revision?
+      # remove modified, switched and partial infos from revision number
+      revision = revision.replace(/[MSP]/gi, '')
       console.log('SVN', 'svn-utils', 'revision', revision) if @devMode
       if revision != @revision
         @revision = revision
         hasChanged = true
 
     info = @getSvnInfo()
-    if info?
-      url = info.entry.url
-      console.log('SVN', 'svn-utils', 'url', url) if @devMode
-      if url != @url
-        @url = url
-        urlParts = urlParser.parse(url)
+    if info? && info.url?
+      console.log('SVN', 'svn-utils', 'url', info.url) if @devMode
+      if info.url != @url
+        @url = info.url
+        urlParts = urlParser.parse(info.url)
         @urlPath = urlParts.path
         pathParts = @urlPath.split('/')
         @shortHead = if pathParts.length > 0 then pathParts.pop() else ''
@@ -270,25 +271,6 @@ class Repository
   handleSvnError: (error) ->
     console.error('SVN', 'svn-utils', error)
 
-  # Parses the stdout xml string from a svn command and transforms it
-  # into a JSON-Object. Throws an Error if there was a parse error.
-  #
-  # * `xmlResult` The xml {String} form a svn command
-  #
-  # Returns a {Object} from the xml result
-  svnXmlToObject: (xmlResult) ->
-    infoObject = null
-    xml2js.parseString(xmlResult, {
-      async: false
-      explicitRoot: false
-      explicitArray: false
-    }, (err, result) ->
-      if (err)
-        throw new Error(err)
-      infoObject = result
-    )
-    return infoObject
-
   # Returns on success the version from the svn binary. Otherwise null.
   #
   # Returns a {String} containing the svn-binary version
@@ -306,8 +288,10 @@ class Repository
   getSvnInfo: () ->
     try
       xml = @svnCommand(['info', '--xml', @rootPath])
-      infoObject = @svnXmlToObject(xml)
-      return infoObject
+      xmlDocument = $.parseXML(xml)
+      return {
+        url: $('info > entry > url', xmlDocument).text()
+      }
     catch error
       @handleSvnError(error)
       return null
@@ -330,30 +314,26 @@ class Repository
   getSvnStatus: () ->
     try
       xml = @svnCommand(['status', '-q','--xml', @rootPath])
-      result = @svnXmlToObject(xml)
+      xmlDocument = $.parseXML(xml)
     catch error
       @handleSvnError(error)
       return null
 
     items = []
-    if (result.target.entry)
-      resultArray = result.target.entry
-      if !util.isArray(resultArray)
-        resultArray = [result.target.entry]
-      for resultItem in resultArray
-        items.push({
-          'path': resultItem.$.path
-          'status': @mapSvnStatus(resultItem["wc-status"].$)
-        })
-    else
-      items.push({
-        'path': @rootPath
-        'status': 0
-      })
+    entries = $('status > target > entry', xmlDocument)
+    if entries
+      for entry in entries
+        path = $(entry).attr('path')
+        status = $('wc-status', entry).attr('item')
+        if path? && status?
+          items.push({
+            'path': path
+            'status': @mapSvnStatus(status)
+          })
+
     return items
 
-  # Returns on success an svn-status array. Otherwise null.
-  # Array keys are paths, values {Number} representing the status
+  # Returns on success a status bitmask. Otherwise null.
   #
   # * `svnPath` The path {String} for the status inquiry
   #
@@ -363,21 +343,18 @@ class Repository
 
     try
       xml = @svnCommand(['status', '-q','--xml', svnPath])
-      result = @svnXmlToObject(xml)
+      xmlDocument = $.parseXML(xml)
     catch error
       @handleSvnError(error)
       return null
 
     status = 0
-    result = result.target.entry
-    if (result?)
-
-      if util.isArray(result)
-        for item in result
-          status |= @mapSvnStatus(item["wc-status"].$)
-      else
-        status = @mapSvnStatus(result["wc-status"].$)
-
+    entries = $('status > target > entry', xmlDocument)
+    if entries
+      for entry in entries
+        entryStatus = $('wc-status', entry).attr('item')
+        if entryStatus?
+          status |= @mapSvnStatus(entryStatus)
       return status
     else
       return null
@@ -385,28 +362,29 @@ class Repository
   # Translates the status {String} from `svn status` command into a
   # status {Number}.
   #
-  # * `status` The status {Object} from `svn status` command
+  # * `status` The status {String} from `svn status` command
   #
   # Returns a {Number} representing the status
   mapSvnStatus: (status) ->
+    return 0 unless status
     statusBitmask = 0
 
     # status workingdir
-    if status.item == 'modified'
+    if status == 'modified'
       statusBitmask = statusWorkingDirModified
-    if status.item == 'unversioned'
+    if status == 'unversioned'
       statusBitmask = statusWorkingDirNew
-    if status.item == 'missing'
+    if status == 'missing'
       statusBitmask = statusWorkingDirDelete
-    if status.item == 'ignored'
+    if status == 'ignored'
       statusBitmask = statusIgnored
-    if status.item == 'normal' && status.props == 'modified'
+    if status == 'normal' && status.props == 'modified'
       statusBitmask = statusWorkingDirTypeChange
 
     # status index
-    if status.item == 'added'
+    if status == 'added'
       statusBitmask = statusIndexNew
-    if status.item == 'deleted'
+    if status == 'deleted'
       statusBitmask = statusIndexDeleted
 
     return statusBitmask
