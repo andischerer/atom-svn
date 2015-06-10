@@ -159,7 +159,7 @@ class SvnRepository
   #   for, only needed if the repository contains submodules.
   #
   # Returns a {String}.
-  getShortHead: (path) -> null
+  getShortHead: (path) -> @getRepo().getShortHead()
 
   # Public: Is the given path a submodule in the repository?
   #
@@ -404,7 +404,7 @@ class SvnRepository
     new Promise((resolve, reject) =>
       if @getRepo().checkRepositoryHasChanged()
         @statuses = {}
-        
+
       statusesUnchanged = true
       for {status, path} in @getRepo().getStatus()
         slashedPath = @slashPath(path)

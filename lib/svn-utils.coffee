@@ -1,9 +1,10 @@
 fs = require 'fs'
 path = require 'path'
 util = require 'util'
+urlParser = require 'url'
 xml2js = require 'xml2js'
-{spawnSync} = require('child_process')
-diffLib = require('jsdifflib')
+{spawnSync} = require 'child_process'
+diffLib = require 'jsdifflib'
 
 ###
 Section: Constants used for file/buffer checking against changes
@@ -38,7 +39,11 @@ class Repository
   binaryAvailable: false
 
   version: null
+
   url: null
+  urlPath: null
+  shortHead: null
+
   revision: null
 
 
@@ -82,9 +87,16 @@ class Repository
       console.log('SVN', 'svn-utils', 'url', url) if @devMode
       if url != @url
         @url = url
+        urlParts = urlParser.parse(url)
+        @urlPath = urlParts.path
+        pathParts = @urlPath.split('/')
+        @shortHead = if pathParts.length > 0 then pathParts.pop() else ''
         hasChanged = true
 
     return hasChanged
+
+  getShortHead: () ->
+    return @shortHead
 
   ###
   Section: TreeView Path SVN status
