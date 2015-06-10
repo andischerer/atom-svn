@@ -25,6 +25,10 @@ newStatusFlags = statusWorkingDirNew | statusIndexNew
 
 deletedStatusFlags = statusWorkingDirDelete | statusIndexDeleted
 
+suppressSvnWarnings = [
+  'W200005' # svn: warning: W200005: 'file' is not under version control
+  'E200009' # Could not cat all targets because some targets are not versioned
+]
 
 class Repository
 
@@ -269,7 +273,14 @@ class Repository
     return child.stdout.toString()
 
   handleSvnError: (error) ->
-    console.error('SVN', 'svn-utils', error)
+    logMessage = true
+    message = error.message
+    for suppressSvnWarning in suppressSvnWarnings
+      if message.indexOf(suppressSvnWarning) > 0
+        logMessage = false
+        break
+    if logMessage
+      console.error('SVN', 'svn-utils', error)
 
   # Returns on success the version from the svn binary. Otherwise null.
   #
