@@ -31,7 +31,7 @@ class SvnRepositoryProvider
   constructor: (@project) ->
     # Keys are real paths to the rootPath of SVN-Repo
     # Values are the corresponding SvnRepository objects.
-    @pathToRepository = []
+    @pathToRepository = {}
 
   # Returns a {Promise} that resolves with either:
   # * {SvnRepository} if the given directory has a SVN repository.
@@ -53,7 +53,7 @@ class SvnRepositoryProvider
       return null
 
     svnDirPath = svnRepoRootDir.getPath()
-    repo = @pathToRepository[svnDirPath]?
+    repo = @pathToRepository[svnDirPath]
     unless repo
       repo = SvnRepository.open(svnDirPath, project: @project)
       return null unless repo
