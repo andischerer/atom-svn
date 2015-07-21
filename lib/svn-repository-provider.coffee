@@ -57,8 +57,12 @@ class SvnRepositoryProvider
     unless repo
       repo = SvnRepository.open(svnDirPath, project: @project)
       return null unless repo
+      # @TODO: handle multiple projects with different working directories for the same svn-repository
+      # atm. the first project workingDir folder wins
+      repo.setWorkingDirectory(directory.getPath())
       repo.onDidDestroy(=> delete @pathToRepository[svnDirPath])
       @pathToRepository[svnDirPath] = repo
       repo.refreshIndex()
       repo.refreshStatus()
+
     return repo

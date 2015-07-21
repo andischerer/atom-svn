@@ -6,6 +6,7 @@ module.exports =
 class SvnRepository
 
   devMode: atom.inDevMode()
+  workingDirectory: ''
 
   ###
   Section: Construction and Destruction
@@ -124,10 +125,15 @@ class SvnRepository
   getPath: ->
     @path ?= @getRepo().getPath()
 
+  # Public: Sets the {String} working directory path of the repository.
+  setWorkingDirectory: (workingDirectory) ->
+    console.log('SVN', 'svn-repository', 'setWorkingDirectory', workingDirectory) if @devMode
+    @workingDirectory = workingDirectory
+
   # Public: Returns the {String} working directory path of the repository.
   getWorkingDirectory: ->
-    console.log('SVN', 'svn-repository', 'getWorkingDirectory', 'shouldnt get called!!') if @devMode
-    # return @getRepo().getWorkingDirectory()
+    console.log('SVN', 'svn-repository', 'getWorkingDirectory', @workingDirectory) if @devMode
+    return @workingDirectory
 
   # Public: Returns true if at the root, false if in a subfolder of the
   # repository.
