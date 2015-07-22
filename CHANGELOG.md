@@ -1,3 +1,6 @@
+## 0.0.7
+- Fix repo and working directory sanity checks
+
 ## 0.0.6
 - support for shortHead info in statusbar
 - performance improvement: jquery instead of xml2js for xml parsing
