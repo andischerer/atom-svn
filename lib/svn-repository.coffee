@@ -408,15 +408,16 @@ class SvnRepository
     console.log('SVN', 'svn-repository', 'refreshStatus') if @devMode
 
     new Promise((resolve, reject) =>
+      statusesDidChange = false
       if @getRepo().checkRepositoryHasChanged()
         @statuses = {}
+        statusesDidChange = true
 
-      statusesUnchanged = true
       for {status, path} in @getRepo().getStatus()
         slashedPath = @slashPath(path)
         if @statuses[slashedPath] != status
           @statuses[slashedPath] = status
-          statusesUnchanged = false
-      unless statusesUnchanged
-        @emitter.emit 'did-change-statuses'
+          statusesDidChange = true
+
+      if statusesDidChange then @emitter.emit 'did-change-statuses'
     )

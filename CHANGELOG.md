@@ -1,3 +1,6 @@
+## 0.0.8
+- Refresh svn repo status after repo change(commit, switch, ...)
+
 ## 0.0.7
 - Fix repo and working directory sanity checks
 
