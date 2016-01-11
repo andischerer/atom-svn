@@ -39,6 +39,9 @@ class SvnRepository
     @statuses = {}
     @upstream = {ahead: 0, behind: 0}
 
+    @cachedIgnoreStatuses = []
+    @cachedSvnFileContent = {}
+
     {@project, refreshOnWindowFocus} = options
 
     refreshOnWindowFocus ?= true
@@ -246,10 +249,7 @@ class SvnRepository
   #
   # Returns a {Boolean}.
   # isPathIgnored: (path) -> @isStatusIgnored(@getPathStatus(path))
-  isPathIgnored: (path) ->
-    repo = @getRepo()
-    status = repo.getSvnPathStatus(@slashPath(path))
-    return repo.isStatusIgnored(status)
+  isPathIgnored: (path) -> @cachedIgnoreStatuses.indexOf(@slashPath(path)) != -1
 
   # Public: Get the status of a directory in the repository's working directory.
   #
@@ -309,6 +309,18 @@ class SvnRepository
   Section: Retrieving Diffs
   ###
 
+  # Retrieves the file content from latest svn revision and cache it.
+  #
+  # * `path` The {String} path for retrieving file contents.
+  #
+  # Returns a {String} with the filecontents
+  getCachedSvnFileContent: (path) ->
+    slashedPath = @slashPath(path)
+    if (!@cachedSvnFileContent[slashedPath])
+      repo = @getRepo()
+      @cachedSvnFileContent[slashedPath] = repo.getSvnCat(path)
+    return @cachedSvnFileContent[slashedPath]
+
   # Public: Retrieves the number of lines added and removed to a path.
   #
   # This compares the working directory contents of the path to the `HEAD`
@@ -320,8 +332,7 @@ class SvnRepository
   #   * `added` The {Number} of added lines.
   #   * `deleted` The {Number} of deleted lines.
   getDiffStats: (path) ->
-    console.log('SVN', 'svn-repository', 'getDiffStats', path) if @devMode
-    return @getRepo().getDiffStats(@slashPath(path))
+    return @getRepo().getDiffStats(@slashPath(path), @getCachedSvnFileContent(path))
 
   # Public: Retrieves the line diffs comparing the `HEAD` version of the given
   # path and the given text.
@@ -412,6 +423,9 @@ class SvnRepository
       statusesDidChange = false
       if @getRepo().checkRepositoryHasChanged()
         @statuses = {}
+        @cachedSvnFileContent = {}
+        # cache recursiv ignore statuses
+        @cachedIgnoreStatuses = @getRepo().getRecursiveIgnoreStatuses()
         statusesDidChange = true
 
       for {status, path} in @getRepo().getStatus()

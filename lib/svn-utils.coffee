@@ -162,19 +162,18 @@ class Repository
   # version.
   #
   # * `path` The {String} path to check.
+  # * `lastRevFileContent` filecontent from latest svn revision.
   #
   # Returns an {Object} with the following keys:
   #   * `added` The {Number} of added lines.
   #   * `deleted` The {Number} of deleted lines.
-  getDiffStats: (path) ->
+  getDiffStats: (path, lastRevFileContent) ->
     diffStats = {
       added: 0
       deleted: 0
     }
-
-    fileFromSvn = @getSvnCat(path)
-    if (fileFromSvn? && fs.existsSync(path))
-      base = diffLib.stringAsLines(fileFromSvn)
+    if (lastRevFileContent? && fs.existsSync(path))
+      base = diffLib.stringAsLines(lastRevFileContent)
       newtxt = diffLib.stringAsLines(fs.readFileSync(path).toString())
 
       # create a SequenceMatcher instance that diffs the two sets of lines
@@ -197,7 +196,7 @@ class Repository
   # Public: Retrieves the line diffs comparing the `HEAD` version of the given
   # path and the given text.
   #
-  # * `path` The {String} path relative to the repository.
+  # * `lastRevFileContent` filecontent from latest svn revision.
   # * `text` The {String} to compare against the `HEAD` contents
   #
   # Returns an {Array} of hunk {Object}s with the following keys:
@@ -205,13 +204,12 @@ class Repository
   #   * `newStart` The line {Number} of the new hunk.
   #   * `oldLines` The {Number} of lines in the old hunk.
   #   * `newLines` The {Number} of lines in the new hunk
-  getLineDiffs: (path, text, options) ->
-    console.log('SVN', 'svn-utils', 'getLineDiffs', path, options) if @devMode
+  getLineDiffs: (lastRevFileContent, text, options) ->
+    console.log('SVN', 'svn-utils', 'getLineDiffs', options) if @devMode
     hunks = []
 
-    fileFromSvn = @getSvnCat(path)
-    if (fileFromSvn?)
-      base = diffLib.stringAsLines(fileFromSvn)
+    if (lastRevFileContent?)
+      base = diffLib.stringAsLines(lastRevFileContent)
       newtxt = diffLib.stringAsLines(text)
       # create a SequenceMatcher instance that diffs the two sets of lines
       sm = new diffLib.SequenceMatcher(base, newtxt)
@@ -317,6 +315,32 @@ class Repository
     catch error
       @handleSvnError(error)
       return null
+
+  # Returns on success an svn-ignores array. Otherwise null.
+  # Array keys are paths, values {Number} representing the status
+  #
+  # Returns a {Array} with path and statusnumber
+  getRecursiveIgnoreStatuses: () ->
+    try
+      xml = @svnCommand(['propget', '-R', '--xml', 'svn:ignore', @rootPath])
+      xmlDocument = $.parseXML(xml)
+    catch error
+      @handleSvnError(error)
+      return null
+
+    items = []
+    targets = $('properties > target', xmlDocument)
+    if targets
+      for target in targets
+        basePath = $(target).attr('path')
+        ignores = $('property', target).text()
+        if ignores
+          ignoredItems = ignores.split('\n')
+          for ignoredItem in ignoredItems
+            if (ignoredItem and ignoredItem.length > 0)
+              items.push(basePath + '/' + ignoredItem)
+
+    return items
 
   # Returns on success an svn-status array. Otherwise null.
   # Array keys are paths, values {Number} representing the status
