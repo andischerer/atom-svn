@@ -273,7 +273,7 @@ class SvnRepository
   # {::isStatusModified} or {::isStatusNew} to get more information.
   getPathStatus: (path) ->
     console.log('SVN', 'svn-repository', 'getPathStatus', path) if @devMode
-    repo = @getRepo(path)
+    repo = @getRepo()
     relativePath = @slashPath(path)
     currentPathStatus = @statuses[relativePath] ? 0
     pathStatus = repo.getPathStatus(relativePath) ? 0
@@ -292,6 +292,7 @@ class SvnRepository
   #
   # Returns a status {Number} or null if the path is not in the cache.
   getCachedPathStatus: (path) ->
+    return unless path
     console.log('SVN', 'svn-repository', 'getCachedPathStatus', path, @statuses[@slashPath(path)]) if @devMode
     return @statuses[@slashPath(path)]
 
@@ -337,8 +338,8 @@ class SvnRepository
     # Ignore eol of line differences on windows so that files checked in as
     # LF don't report every line modified when the text contains CRLF endings.
     options = ignoreEolWhitespace: process.platform is 'win32'
-    repo = @getRepo(path)
-    return repo.getLineDiffs(@slashPath(path), text, options)
+    repo = @getRepo()
+    return repo.getLineDiffs(@getCachedSvnFileContent(path), text, options)
 
   ###
   Section: Checking Out
