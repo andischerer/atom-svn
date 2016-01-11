@@ -1,3 +1,6 @@
+## 0.0.9
+- Performance and startup improvements
+
 ## 0.0.8
 - Refresh svn repo status after repo change(commit, switch, ...)
 
