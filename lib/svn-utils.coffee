@@ -249,23 +249,10 @@ class Repository
       params = []
     if !util.isArray(params)
       params = [params]
-    new Promise (resolve, reject) ->
-      output = ''
-      try
-        new BufferedProcess
-          command: atom.config.get('atom-svn.svnPath') ? 'svn'
-          args: params
-          stdout: (data) -> output += data.toString()
-          stderr: (data) ->
-            output += data.toString()
-          exit: (code) ->
-            if code is 0
-              resolve output
-            else
-              reject output
-      catch
-        notifier.addError 'Atom SVN is unable to locate the svn command. Please ensure process.env.PATH can access svn.'
-        reject "Couldn't find svn"
+    child = spawnSync(atom.config.get('atom-svn.svnPath') ? 'svn', params)
+    if child.status != 0
+      throw new Error(child.stderr.toString())
+    return child.stdout.toString()
 
   # Spawns an svnversion command and returns stdout or throws an error if process
   # exits with an exitcode unequal to zero.
@@ -278,7 +265,7 @@ class Repository
       params = []
     if !util.isArray(params)
       params = [params]
-    child = spawnSync('svnversion', params)
+    child = spawnSync(atom.config.get('atom-svn.svnversionPath') ? 'svnversion', params)
     if child.status != 0
       throw new Error(child.stderr.toString())
     return child.stdout.toString()
