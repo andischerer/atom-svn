@@ -29,6 +29,16 @@ class SvnRepository
       null
 
   constructor: (path, options={}) ->
+    fakeAsync = (fn) -> new Promise((resolve) -> setTimeout((-> resolve(fn())), 0))
+    @async =
+      onDidChangeStatus: (cb) => @onDidChangeStatus(cb)
+      onDidChangeStatuses: (cb) => @onDidChangeStatuses(cb)
+      getCachedUpstreamAheadBehindCount: (path) => @getCachedUpstreamAheadBehindCount(path)
+      getShortHead: (path) => fakeAsync(=> @getShortHead())
+      getCachedPathStatus: (path) => fakeAsync(=> @getCachedPathStatus(path))
+      getLineDiffs: (path, text) => fakeAsync(=> @getLineDiffs(path, text))
+      isStatusNew: (status) => fakeAsync(=> @isStatusNew(status))
+
     @emitter = new Emitter
     @subscriptions = new CompositeDisposable
 
