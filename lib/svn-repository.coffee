@@ -38,6 +38,15 @@ class SvnRepository
       getCachedPathStatus: (path) => fakeAsync(=> @getCachedPathStatus(path))
       getLineDiffs: (path, text) => fakeAsync(=> @getLineDiffs(path, text))
       isStatusNew: (status) => fakeAsync(=> @isStatusNew(status))
+      getWorkingDirectory: () => fakeAsync(=> @getWorkingDirectory())
+      getCachedPathStatuses: () =>
+        # Our @statuses object uses absolute paths,
+        # the method should return relative (to working directory) paths
+        statuses = {}
+        workingDirectory = @slashPath(@getWorkingDirectory())
+        for filepath of @statuses
+          statuses[filepath.replace(workingDirectory, "")] = @statuses[filepath]
+        statuses
 
     @emitter = new Emitter
     @subscriptions = new CompositeDisposable
