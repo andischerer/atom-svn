@@ -1,3 +1,9 @@
+## 0.0.11
+- Implement async getWorkingDirectory and getCachedPathStatuses
+
+## 0.0.10
+- Initial support for Atom's new async git api
+
 ## 0.0.9
 - Performance and startup improvements
 
