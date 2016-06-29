@@ -1,3 +1,6 @@
+## 0.0.12
+- Support multiple SVN repositories
+
 ## 0.0.11
 - Implement async getWorkingDirectory and getCachedPathStatuses
 
