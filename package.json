@@ -1,7 +1,7 @@
 {
   "name": "svn",
   "main": "./lib/svn",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Marks lines/files in the editor gutter/treeview that have been added, edited, or deleted since the last commit.",
   "keywords": [
     "svn",

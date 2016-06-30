@@ -1,5 +1,5 @@
 fs = require 'fs'
-path = require 'path'
+pathlib = require 'path'
 util = require 'util'
 urlParser = require 'url'
 $ = require 'jquery'
@@ -56,7 +56,7 @@ class Repository
   ###
 
   constructor: (repoRootPath) ->
-    @rootPath = path.normalize(repoRootPath)
+    @rootPath = pathlib.normalize(repoRootPath)
     console.log('SVN', 'svn-utils', 'repoRootPath', @rootPath) if @devMode
 
   # Checks if there is a svn binary in the os searchpath and returns the
