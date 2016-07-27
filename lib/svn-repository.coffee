@@ -213,7 +213,7 @@ class SvnRepository
   # Returns an {Object} with the following keys:
   #   * `ahead`  The {Number} of commits ahead.
   #   * `behind` The {Number} of commits behind.
-  getCachedUpstreamAheadBehindCount: (path) -> null
+  getCachedUpstreamAheadBehindCount: (path) -> {ahead: 0, behind: 0}
 
   # Public: Returns the svn property value specified by the key.
   #
