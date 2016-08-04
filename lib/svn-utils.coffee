@@ -249,7 +249,7 @@ class Repository
       params = []
     if !util.isArray(params)
       params = [params]
-    child = spawnSync('svn', params)
+    child = spawnSync(atom.config.get('atom-svn.svnPath') ? 'svn', params)
     if child.status != 0
       throw new Error(child.stderr.toString())
     return child.stdout.toString()
@@ -265,7 +265,7 @@ class Repository
       params = []
     if !util.isArray(params)
       params = [params]
-    child = spawnSync('svnversion', params)
+    child = spawnSync(atom.config.get('atom-svn.svnversionPath') ? 'svnversion', params)
     if child.status != 0
       throw new Error(child.stderr.toString())
     return child.stdout.toString()
