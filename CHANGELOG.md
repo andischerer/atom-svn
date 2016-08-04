@@ -1,3 +1,6 @@
+## 0.0.13
+- Bufix for #28
+
 ## 0.0.12
 - Support multiple SVN repositories
 
