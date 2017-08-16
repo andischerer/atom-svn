@@ -433,7 +433,7 @@ class Repository
   getSvnCat: (svnPath) ->
     params = [
       'cat'
-      svnPath
+      svnPath + '@HEAD'
     ]
     try
       fileContent = @svnCommand(params)
